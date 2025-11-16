@@ -78,10 +78,12 @@ class DatabaseSchema {
 
   /// Create triggers for automatic calculations
   static Future<void> createTriggers(Database db) async {
-    // GKI calculation trigger
+    // GKI calculation trigger (with division by zero protection)
     await db.execute('''
       CREATE TRIGGER IF NOT EXISTS calculate_gki AFTER INSERT ON tb_health_log
-      WHEN NEW.blood_glucose_mg_dl IS NOT NULL AND NEW.blood_ketones_mmol_l IS NOT NULL
+      WHEN NEW.blood_glucose_mg_dl IS NOT NULL 
+        AND NEW.blood_ketones_mmol_l IS NOT NULL
+        AND NEW.blood_ketones_mmol_l > 0
       BEGIN
         UPDATE tb_health_log
         SET gki_score = (NEW.blood_glucose_mg_dl / 18.0) / NEW.blood_ketones_mmol_l

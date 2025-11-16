@@ -30,9 +30,11 @@ class SecurityUtils {
   }
 
   /// Derive encryption key from password and device ID
-  /// Note: This is a simplified version. In production, use proper key derivation
-  static String deriveEncryptionKey(String password, String deviceId) {
-    final combined = '$password:$deviceId';
+  /// Note: This is a simplified version. In production, use proper key derivation (PBKDF2)
+  /// Never store encryption key in code - derive from user password + device biometrics
+  static String deriveEncryptionKey(String userPassword, String deviceId) {
+    // Add salt for additional security
+    final combined = '$userPassword:$deviceId:keto_pilot_salt_v1';
     final bytes = utf8.encode(combined);
     final hash = sha256.convert(bytes);
     return hash.toString();

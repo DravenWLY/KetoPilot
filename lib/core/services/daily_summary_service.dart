@@ -16,10 +16,21 @@ class DailySummaryService {
   final UserDao _userDao = UserDao();
 
   /// Calculate and upsert daily summary for a user and date
+  /// Includes caching to avoid unnecessary recalculations
   Future<DailySummaryModel> calculateDailySummary({
     required int userId,
     required String date,
   }) async {
+    // Check if already calculated recently (within last hour)
+    final existing = await _summaryDao.getDailySummary(userId, date);
+    if (existing != null) {
+      final lastCalc = DateTime.parse(existing.lastCalculatedAt);
+      if (DateTime.now().difference(lastCalc).inHours < 1) {
+        // Return cached version if calculated within last hour
+        return existing;
+      }
+    }
+
     final db = await _dbService.database;
     final user = await _userDao.getUserById(userId);
     if (user == null) {
