@@ -12,9 +12,14 @@ class TestDatabaseHelper {
       inMemoryDatabasePath,
       version: 1,
       onCreate: (db, version) async {
+        // Disable foreign keys for testing to avoid constraint issues
+        await db.execute('PRAGMA foreign_keys = OFF');
         await DatabaseSchema.createTables(db);
+        await DatabaseSchema.createFtsTables(db);
         await DatabaseSchema.createIndexes(db);
         await DatabaseSchema.createTriggers(db);
+        // Re-enable foreign keys after setup
+        await db.execute('PRAGMA foreign_keys = ON');
       },
     );
   }

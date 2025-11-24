@@ -1,20 +1,37 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import '../database/database_service.dart';
 import '../database/models/food_model.dart';
-import '../database/models/user_model.dart';
 import '../database/daos/food_dao.dart';
+import '../database/daos/drift_food_dao.dart';
 import '../database/daos/user_dao.dart';
 import '../database/daos/food_creation_audit_dao.dart';
 
 /// Service for handling food creation with rate limiting
+/// Uses DriftFoodDao on web for compatibility
+/// Note: Rate limiting checks are skipped on web (UserDao uses sqflite)
 class FoodCreationService {
-  final DatabaseService _dbService = DatabaseService();
-  final FoodDao _foodDao = FoodDao();
-  final UserDao _userDao = UserDao();
-  final FoodCreationAuditDao _auditDao = FoodCreationAuditDao();
+  final DriftFoodDao _driftFoodDao = DriftFoodDao();
+  final FoodDao? _foodDao = kIsWeb ? null : FoodDao();
+  // UserDao and FoodCreationAuditDao use sqflite, not available on web
+  final UserDao? _userDao = kIsWeb ? null : UserDao();
+  final FoodCreationAuditDao? _auditDao = kIsWeb ? null : FoodCreationAuditDao();
 
   /// Check if user can create food (rate limiting)
+  /// On web, rate limiting is disabled (returns always allowed)
   Future<FoodCreationResult> canCreateFood(int userId) async {
-    final user = await _userDao.getUserById(userId);
+    // On web, skip rate limiting (UserDao uses sqflite which doesn't work on web)
+    if (kIsWeb) {
+      // Return default values - no rate limiting on web
+      final now = DateTime.now();
+      return FoodCreationResult(
+        canCreate: true,
+        remainingQuota: 999, // Unlimited on web
+        resetDate: now.add(const Duration(days: 21)).toIso8601String().split('T')[0],
+      );
+    }
+
+    // Mobile: Use actual rate limiting
+    final user = await _userDao!.getUserById(userId);
     if (user == null) {
       throw Exception('User not found');
     }
@@ -30,7 +47,7 @@ class FoodCreationService {
 
     if (windowExpired) {
       // Reset window
-      await _userDao.updateUser(user.copyWith(
+      await _userDao!.updateUser(user.copyWith(
         foodCreationCount: 0,
         foodCreationWindowStart: now.toIso8601String(),
       ));
@@ -117,26 +134,31 @@ class FoodCreationService {
       createdAt: food.createdAt,
       updatedAt: food.updatedAt,
     );
-    final foodId = await _foodDao.insertFood(foodWithUser);
+    // Use DriftFoodDao on web, FoodDao on mobile
+    final foodId = kIsWeb 
+        ? await _driftFoodDao.insertFood(foodWithUser)
+        : await _foodDao!.insertFood(foodWithUser);
 
     // The trigger will automatically increment the counter and create audit record
-    // But we can also verify it was created
-    final audit = await _auditDao.getAuditsByDateRange(
-      userId,
-      DateTime.now().subtract(const Duration(days: 30)).toIso8601String(),
-      DateTime.now().toIso8601String(),
-    );
+    // Note: Audit functionality may not work on web (uses sqflite-based DAO)
+    // For web, food creation works but audit tracking is limited
 
     return foodId;
   }
 
   Future<int> _getUserLimit(int userId) async {
-    final user = await _userDao.getUserById(userId);
+    if (kIsWeb) {
+      return 999; // Unlimited on web
+    }
+    final user = await _userDao!.getUserById(userId);
     return user?.maxFoodsPerWindow ?? 50;
   }
 
   Future<int> _getUserWindowDays(int userId) async {
-    final user = await _userDao.getUserById(userId);
+    if (kIsWeb) {
+      return 21; // Default window
+    }
+    final user = await _userDao!.getUserById(userId);
     return user?.windowDurationDays ?? 21;
   }
 }

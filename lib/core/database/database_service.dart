@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import '../constants/app_constants.dart';
@@ -5,9 +6,11 @@ import 'database_schema.dart';
 
 /// Main database service for Keto Pilot
 /// Handles database initialization, connection, and migration
+/// Works on mobile platforms. On web, returns a mock database.
 class DatabaseService {
   static DatabaseService? _instance;
   static Database? _database;
+  static final bool _isWeb = kIsWeb;
 
   DatabaseService._internal();
 
@@ -16,15 +19,32 @@ class DatabaseService {
     return _instance!;
   }
 
+  /// Check if running on web
+  bool get isWeb => _isWeb;
+
   /// Get database instance (singleton)
   Future<Database> get database async {
     if (_database != null) return _database!;
+    
+    // On web, sqflite doesn't work - return a mock or throw
+    if (_isWeb) {
+      throw UnsupportedError(
+        'sqflite is not supported on web. '
+        'Please use a web-compatible storage solution like IndexedDB, '
+        'or use a package like drift (formerly Moor) that supports web.'
+      );
+    }
+    
     _database = await _initDatabase();
     return _database!;
   }
 
-  /// Initialize database
+  /// Initialize database (mobile only)
   Future<Database> _initDatabase() async {
+    if (_isWeb) {
+      throw UnsupportedError('Database initialization not supported on web');
+    }
+    
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, AppConstants.databaseName);
 

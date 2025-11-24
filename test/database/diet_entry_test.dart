@@ -18,13 +18,18 @@ void main() {
       inMemoryDatabasePath,
       version: 1,
       onCreate: (db, version) async {
+        // Disable foreign keys during setup
+        await db.execute('PRAGMA foreign_keys = OFF');
         await DatabaseSchema.createTables(db);
+        await DatabaseSchema.createFtsTables(db);
         await DatabaseSchema.createIndexes(db);
         await DatabaseSchema.createTriggers(db);
+        // Re-enable foreign keys
+        await db.execute('PRAGMA foreign_keys = ON');
       },
     );
 
-    dietEntryDao = DietEntryDao();
+    dietEntryDao = DietEntryDao.withDatabase(database);
   });
 
   tearDown(() async {
@@ -80,6 +85,26 @@ void main() {
 
     test('Get entries by date range', () async {
       const userId = 1;
+
+      // Create user
+      await database.insert('tb_user', {
+        'user_id': userId,
+        'email': 'test@example.com',
+        'password_hash': 'hash',
+        'target_net_carbs': 20.0,
+      });
+
+      // Create food
+      final food = FoodModel(
+        foodId: 1,
+        foodDescription: 'Test Food',
+        energyKcal: 100.0,
+        totalProteinG: 10.0,
+        totalFatG: 5.0,
+        totalCarbohydrateG: 5.0,
+        dietaryFiberG: 2.0,
+      );
+      await database.insert('tb_food', food.toMap());
 
       // Create test entries
       final today = DateTime.now();

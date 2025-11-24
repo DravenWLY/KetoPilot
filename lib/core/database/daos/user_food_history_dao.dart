@@ -47,8 +47,6 @@ class UserFoodHistoryDao {
     required int foodId,
     required DateTime consumedAt,
   }) async {
-    final db = await _dbService.database;
-    
     // Get existing history or create new
     final existing = await getFoodHistory(userId, foodId);
     

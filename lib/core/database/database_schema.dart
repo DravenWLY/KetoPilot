@@ -210,8 +210,14 @@ class DatabaseSchema {
   static Future<void> createFtsTables(Database db) async {
     // Note: FTS5 is not directly supported in sqflite, but we can create a regular table
     // and implement search using LIKE queries or use a separate search index
-    // For now, we'll create a comment noting this limitation
-    // In production, consider using a search library or implementing custom search logic
+    // For now, we'll create a simple table that mimics FTS structure for triggers to work
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS tb_food_fts (
+        rowid INTEGER PRIMARY KEY,
+        food_description TEXT,
+        keylist TEXT
+      )
+    ''');
   }
 
   /// Create tb_user table

@@ -48,7 +48,7 @@ class FoodModel {
     this.dietaryFiberG = 0,
     this.sugarG = 0,
     this.addedSugarG = 0,
-    this.netCarbsG,
+    double? netCarbsG,
     this.saturatedFatG,
     this.monounsaturatedFatG,
     this.polyunsaturatedFatG,

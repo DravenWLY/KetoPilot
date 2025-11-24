@@ -19,14 +19,19 @@ void main() {
       inMemoryDatabasePath,
       version: 1,
       onCreate: (db, version) async {
+        // Disable foreign keys during setup
+        await db.execute('PRAGMA foreign_keys = OFF');
         // Create schema
         await DatabaseSchema.createTables(db);
+        await DatabaseSchema.createFtsTables(db);
         await DatabaseSchema.createIndexes(db);
         await DatabaseSchema.createTriggers(db);
+        // Re-enable foreign keys
+        await db.execute('PRAGMA foreign_keys = ON');
       },
     );
 
-    foodDao = FoodDao();
+    foodDao = FoodDao.withDatabase(database);
   });
 
   tearDown(() async {
@@ -168,7 +173,7 @@ void main() {
   group('Food Detail Tests', () {
     test('Get food detail with portions', () async {
       // Insert food
-      final food = FoodModel(
+      final testFood = FoodModel(
         foodId: 1,
         foodDescription: 'Test Food',
         energyKcal: 100.0,
@@ -176,7 +181,7 @@ void main() {
         totalFatG: 5.0,
         totalCarbohydrateG: 5.0,
       );
-      await database.insert('tb_food', food.toMap());
+      await database.insert('tb_food', testFood.toMap());
 
       // Insert portions
       await database.insert('tb_food_portions', {

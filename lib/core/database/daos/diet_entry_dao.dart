@@ -1,20 +1,35 @@
 import 'package:sqflite/sqflite.dart';
 import '../database_service.dart';
+// Note: This DAO uses sqflite (mobile only). For web support, use Drift-based DAOs.
 import '../models/diet_entry_model.dart';
 
 /// Data Access Object for tb_diet_entries table
 class DietEntryDao {
-  final DatabaseService _dbService = DatabaseService();
+  final DatabaseService? _dbService;
+  final Database? _testDatabase;
+
+  /// Constructor for production use
+  DietEntryDao() : _dbService = DatabaseService(), _testDatabase = null;
+
+  /// Constructor for testing with a provided database
+  DietEntryDao.withDatabase(Database database)
+      : _dbService = null,
+        _testDatabase = database;
+
+  Future<Database> get _database async {
+    if (_testDatabase != null) return _testDatabase!;
+    return await _dbService?.database ?? (throw StateError('Database service not initialized'));
+  }
 
   /// Insert a new diet entry
   Future<int> insertDietEntry(DietEntryModel entry) async {
-    final db = await _dbService.database;
+    final db = await _database;
     return await db.insert('tb_diet_entries', entry.toMap());
   }
 
   /// Get diet entry by ID
   Future<DietEntryModel?> getDietEntryById(int entryId) async {
-    final db = await _dbService.database;
+    final db = await _database;
     final maps = await db.query(
       'tb_diet_entries',
       where: 'entry_id = ?',
@@ -30,7 +45,7 @@ class DietEntryDao {
     int userId,
     String date,
   ) async {
-    final db = await _dbService.database;
+    final db = await _database;
     final maps = await db.query(
       'tb_diet_entries',
       where: 'user_id = ? AND date = ?',
@@ -46,7 +61,7 @@ class DietEntryDao {
     String startDate,
     String endDate,
   ) async {
-    final db = await _dbService.database;
+    final db = await _database;
     final maps = await db.query(
       'tb_diet_entries',
       where: 'user_id = ? AND date >= ? AND date <= ?',
@@ -58,7 +73,7 @@ class DietEntryDao {
 
   /// Get unsynced diet entries
   Future<List<DietEntryModel>> getUnsyncedDietEntries(int userId) async {
-    final db = await _dbService.database;
+    final db = await _database;
     final maps = await db.query(
       'tb_diet_entries',
       where: 'user_id = ? AND synced = 0',
@@ -70,7 +85,7 @@ class DietEntryDao {
 
   /// Update diet entry
   Future<int> updateDietEntry(DietEntryModel entry) async {
-    final db = await _dbService.database;
+    final db = await _database;
     return await db.update(
       'tb_diet_entries',
       entry.toMap(),
@@ -81,7 +96,7 @@ class DietEntryDao {
 
   /// Delete diet entry
   Future<int> deleteDietEntry(int entryId) async {
-    final db = await _dbService.database;
+    final db = await _database;
     return await db.delete(
       'tb_diet_entries',
       where: 'entry_id = ?',
@@ -92,7 +107,7 @@ class DietEntryDao {
   /// Mark entries as synced
   Future<int> markAsSynced(List<int> entryIds) async {
     if (entryIds.isEmpty) return 0;
-    final db = await _dbService.database;
+    final db = await _database;
     final placeholders = entryIds.map((_) => '?').join(',');
     return await db.rawUpdate(
       'UPDATE tb_diet_entries SET synced = 1 WHERE entry_id IN ($placeholders)',
@@ -102,7 +117,7 @@ class DietEntryDao {
 
   /// Get daily totals for a user on a specific date
   Future<Map<String, double>> getDailyTotals(int userId, String date) async {
-    final db = await _dbService.database;
+    final db = await _database;
     final result = await db.rawQuery('''
       SELECT 
         COALESCE(SUM(total_energy_kcal), 0) as total_energy_kcal,

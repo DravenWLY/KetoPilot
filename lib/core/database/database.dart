@@ -1,6 +1,5 @@
-/// Database module exports
-/// 
-/// This file provides convenient access to all database components
+// Database module exports
+// This file provides convenient access to all database components
 
 // Database service
 export 'database_service.dart';
