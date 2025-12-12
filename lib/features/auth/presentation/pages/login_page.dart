@@ -307,7 +307,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
-                    const SizedBox(height: 48);
+                    const SizedBox(height: 48),
 
                     //full name (only for signup)
                     if (!_isLogin) ...[

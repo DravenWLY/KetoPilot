@@ -825,10 +825,13 @@ class _FoodDiaryPageState extends ConsumerState<FoodDiaryPage>
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            _buildMacroChip('C', entry.carbs, Colors.orange),
-            _buildMacroChip('P', entry.protein, Colors.blue),
-            _buildMacroChip('F', entry.fat, Colors.green),
-            _buildCalorieChip(entry.calories),
+            Expanded(child: _buildMacroChip('C', entry.carbs, Colors.orange)),
+            const SizedBox(width: 4),
+            Expanded(child: _buildMacroChip('P', entry.protein, Colors.blue)),
+            const SizedBox(width: 4),
+            Expanded(child: _buildMacroChip('F', entry.fat, Colors.green)),
+            const SizedBox(width: 4),
+            Expanded(child: _buildCalorieChip(entry.calories)),
           ],
         ),
       ],
@@ -837,8 +840,7 @@ class _FoodDiaryPageState extends ConsumerState<FoodDiaryPage>
 
   Widget _buildMacroChip(String label, double value, Color color) {
     return Container(
-      width: 80,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       decoration: BoxDecoration(
         color: color.withOpacity(0.15),
         borderRadius: BorderRadius.circular(10),
@@ -870,8 +872,7 @@ class _FoodDiaryPageState extends ConsumerState<FoodDiaryPage>
 
   Widget _buildCalorieChip(double calories) {
     return Container(
-      width: 80,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.primary.withOpacity(0.15),
         borderRadius: BorderRadius.circular(10),
