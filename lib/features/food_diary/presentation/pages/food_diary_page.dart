@@ -1038,11 +1038,18 @@ class _FoodDiaryPageState extends ConsumerState<FoodDiaryPage>
           ),
         );
 
-        // Create the food
-        final foodId = await foodRepository.createFood(
-          food: result,
-          userId: userId,
-        );
+        // Use existing foodId if the food is from the database, otherwise create it
+        int foodId;
+        if (result.foodId != null && result.foodId! > 0) {
+          // Food already exists in database (from NCC data or previous custom food)
+          foodId = result.foodId!;
+        } else {
+          // Custom food - create it in the database
+          foodId = await foodRepository.createFood(
+            food: result,
+            userId: userId,
+          );
+        }
 
         // Create diet entry for today
         final now = DateTime.now();

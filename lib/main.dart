@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/router/app_router.dart';
 import 'core/themes/app_theme.dart';
 import 'core/database/drift_database_service.dart';
+import 'core/database/services/food_database_seeder.dart';
 import 'core/providers/theme_provider.dart';
 import 'core/providers/user_provider.dart';
 import 'core/config/email_config.dart';
@@ -34,6 +35,10 @@ void _initializeDatabaseAsync() {
       // Pre-initialize in background (non-blocking)
       await driftService.database;
       debugPrint('[MAIN] ✅ Database ready');
+      
+      // Seed the database with NCC sample foods if empty
+      final seeder = FoodDatabaseSeeder();
+      await seeder.seedIfNeeded();
     } catch (e) {
       // Log error but don't crash the app
       debugPrint('[MAIN] ⚠️ Database init: $e');
